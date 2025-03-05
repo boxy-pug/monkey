@@ -28,6 +28,7 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
+// Look at current char and return a token depending on which char.
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
