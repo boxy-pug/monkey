@@ -1,6 +1,8 @@
 package lexer
 
 import (
+	"fmt"
+
 	"github.com/boxy-pug/monkey/token"
 )
 
@@ -24,13 +26,16 @@ func (l *Lexer) readChar() {
 	} else {
 		l.ch = l.input[l.readPosition]
 	}
+	fmt.Printf("l-position: %d, read-posit: %d, char: %s\n", l.position, l.readPosition, string(l.ch))
 	l.position = l.readPosition
 	l.readPosition += 1
 }
 
-// Look at current char and return a token depending on which char.
+// Look at current char or identifier/expression and return a token.
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
+
+	l.skipWhitespace()
 
 	switch l.ch {
 	case '=':
@@ -52,11 +57,61 @@ func (l *Lexer) NextToken() token.Token {
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
+	default:
+		if isLetter(l.ch) {
+			tok.Literal = l.readIdentifier()
+			tok.Type = token.LookupIdent(tok.Literal)
+			fmt.Printf("ttype: %s, tliteral: %s\n", tok.Type, tok.Literal)
+			return tok
+		} else if isDigit(l.ch) {
+			tok.Type = token.INT
+			tok.Literal = l.readNumber()
+			fmt.Printf("toktype: %s, tokliteral: %s\n", tok.Type, tok.Literal)
+			return tok
+		} else {
+			tok = newToken(token.ILLEGAL, l.ch)
+		}
 	}
 	l.readChar()
+	fmt.Printf("ttype: %s, tliteral: %s\n", tok.Type, tok.Literal)
 	return tok
 }
 
+// Helper for NextToken(), returns token
 func newToken(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
+}
+
+// Reads in an identifier and advances until it hits a non-letter.
+func (l *Lexer) readIdentifier() string {
+	position := l.position
+	for isLetter(l.ch) {
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+// Checks wether given arg is a letter.
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
+// Reads in number, advances until it hits non number.
+func (l *Lexer) readNumber() string {
+	position := l.position
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+// Checks whether passed in byte is a number.
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }

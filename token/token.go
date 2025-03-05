@@ -1,5 +1,7 @@
 package token
 
+import "fmt"
+
 type TokenType string
 
 type Token struct {
@@ -32,3 +34,17 @@ const (
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 )
+
+var keywords = map[string]TokenType{
+	"fn":  FUNCTION,
+	"let": LET,
+}
+
+// Checks if identifier is registered as keyword.
+func LookupIdent(ident string) TokenType {
+	if tok, ok := keywords[ident]; ok {
+		fmt.Printf("found %s identifier\n", tok)
+		return tok
+	}
+	return IDENT
+}
