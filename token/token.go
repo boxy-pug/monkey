@@ -34,7 +34,7 @@ const (
 	RETURN   = "RETURN"
 
 	// Operators
-	ASSIGN   = "+"
+	ASSIGN   = "="
 	MINUS    = "-"
 	PLUS     = "+"
 	BANG     = "!"
