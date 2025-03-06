@@ -1,7 +1,5 @@
 package token
 
-import "fmt"
-
 type TokenType string
 
 type Token struct {
@@ -17,10 +15,6 @@ const (
 	IDENT = "IDENT"
 	INT   = "INT"
 
-	// Operators
-	ASSIGN = "="
-	PLUS   = "+"
-
 	// Delimiters
 	COMMA     = ","
 	SEMICOLON = ";"
@@ -33,17 +27,41 @@ const (
 	// Keywords
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
+	TRUE     = "TRUE"
+	FALSE    = "FALSE"
+	IF       = "IF"
+	ELSE     = "ELSE"
+	RETURN   = "RETURN"
+
+	// Operators
+	ASSIGN   = "+"
+	MINUS    = "-"
+	PLUS     = "+"
+	BANG     = "!"
+	ASTERISK = "*"
+	SLASH    = "/"
+
+	LT = "<"
+	GT = ">"
+
+	EQ     = "=="
+	NOT_EQ = "!="
 )
 
 var keywords = map[string]TokenType{
-	"fn":  FUNCTION,
-	"let": LET,
+	"fn":     FUNCTION,
+	"let":    LET,
+	"true":   TRUE,
+	"false":  FALSE,
+	"if":     IF,
+	"else":   ELSE,
+	"return": RETURN,
 }
 
 // Checks if identifier is registered as keyword.
 func LookupIdent(ident string) TokenType {
 	if tok, ok := keywords[ident]; ok {
-		fmt.Printf("found %s identifier\n", tok)
+		// fmt.Printf("found %s identifier\n", tok)
 		return tok
 	}
 	return IDENT
