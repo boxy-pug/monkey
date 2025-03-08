@@ -8,17 +8,33 @@ import (
 	"github.com/boxy-pug/monkey/token"
 )
 
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > or <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -x or !x
+	CALL        // myFunc(X)
+)
+
 type Parser struct {
 	l         *lexer.Lexer
 	curToken  token.Token
 	peekToken token.Token
 	errors    []string
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l, errors: []string{}}
 	p.nextToken()
 	p.nextToken()
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	return p
 }
 
@@ -42,7 +58,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
-// Checks if a statement is let, return ++.
+// Checks if a statement is let, return or expression .
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
@@ -50,7 +66,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -76,6 +92,40 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	}
 
 	return stmt
+}
+
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	stmt := &ast.ReturnStatement{Token: p.curToken}
+
+	p.nextToken()
+
+	//TODO: Skipping expressions
+
+	for !p.curTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+	return stmt
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+	return stmt
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+
+	return leftExp
 }
 
 func (p *Parser) curTokenIs(t token.TokenType) bool {
@@ -108,15 +158,19 @@ func (p *Parser) peekError(t token.TokenType) {
 	p.errors = append(p.errors, msg)
 }
 
-func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
-	stmt := &ast.ReturnStatement{Token: p.curToken}
+type (
+	prefixParseFn func() ast.Expression
+	infixParseFn  func(ast.Expression) ast.Expression
+)
 
-	p.nextToken()
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
 
-	//TODO: Skipping expressions
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
+}
 
-	for !p.curTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
-	return stmt
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
